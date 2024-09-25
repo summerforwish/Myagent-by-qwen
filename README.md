@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [中文](https://github.com/QwenLM/Qwen-Agent/blob/main/README_CN.md) ｜ English
 
 <p align="center">
@@ -154,3 +155,7 @@ BrowserQwen is a browser assistant built upon Qwen-Agent. Please refer to its [d
 # Disclaimer
 
 The code interpreter is not sandboxed, and it executes code in your own environment. Please do not ask Qwen to perform dangerous tasks, and do not directly use the code interpreter for production purposes.
+=======
+# Myagent-by-qwen
+基于Qwen-agent项目进行开发，添加了一些工具，自用
+>>>>>>> remotes/origin/main
