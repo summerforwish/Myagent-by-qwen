@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer Page</title>
+
+    <style>
+        body {
+            background-image: url('/static/v2.jpg');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            width: 50%;
+            margin: auto;
+            padding-top: 50px;
+            text-align: center;
+        }
+
+        .buttons {
+            margin-bottom: 20px;
+        }
+
+        .buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .chat-box {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-box .message {
+            margin: 10px 0;
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .chat-box .user {
+            align-self: flex-end;
+            text-align: right;
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .chat-box .bot {
+            align-self: flex-start;
+            text-align: left;
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .chat-box .image {
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        .chat-input {
+            display: flex;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="buttons">
+        <button onclick="setFunction('/agent/text')">文本功能</button>
+        <button onclick="setFunction('/agent/audio')">暂无</button>
+        <button onclick="setFunction('/agent/image')">暂无</button>
+    </div>
+    <div class="chat-box" id="chat-box">
+        <!-- Chat messages will be appended here -->
+    </div>
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="请输入内容..."/>
+        <button id="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+    <div class="footer">创作者猫猫</div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    let currentFunction = '/agent/text'; // Default to text function
+
+    function setFunction(func) {
+        currentFunction = func;
+    }
+
+    function appendMessage(content, className) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${className}`;
+        messageDiv.innerText = content;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function appendImage(imageSrc) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message image';
+        const img = document.createElement('img');
+        img.src = imageSrc;
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '10px';
+        messageDiv.appendChild(img);
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const messageContent = userInput.value;
+        if (messageContent.trim() === '') return;
+
+        const message = [{"role": "user", "content": messageContent}];
+
+        appendMessage(messageContent, 'user');
+        userInput.value = '';
+        sendBtn.disabled = true;
+
+        // Send message to the backend
+        fetch(currentFunction, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(message)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const contentType = response.headers.get('type');
+            if (contentType === 'text') {
+                return response.json().then(data => {
+                    appendMessage(data.content, 'bot');
+                });
+            } else if (contentType === 'text_img') {
+                const imageName = response.headers.get('image_name');
+                const imageUrl = `/static/${imageName}`;
+                appendImage(imageUrl);
+            } else if (contentType === 'weather') {
+                return response.json().then(data => {
+                    appendMessage(data.content, 'bot');
+                });
+            } else {
+                return response.json().then(data => {
+                    appendMessage('Unknown response type.', 'bot');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            appendMessage('错误：无法连接到服务器。', 'bot');
+        })
+        .finally(() => {
+            sendBtn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>

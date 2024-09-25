@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer Page</title>
+
+    <style>
+        body {
+            background-image: url('/static/background.jpg');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            width: 50%;
+            margin: auto;
+            padding-top: 50px;
+            text-align: center;
+        }
+
+        .buttons {
+            margin-bottom: 20px;
+        }
+
+        .buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .chat-box {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-box .message {
+            margin: 10px 0;
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .chat-box .user {
+            align-self: flex-end;
+            text-align: right;
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .chat-box .bot {
+            align-self: flex-start;
+            text-align: left;
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .chat-input {
+            display: flex;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="buttons">
+        <button onclick="setFunction('/agent/text')">文本功能</button>
+        <button onclick="setFunction('/agent/audio')">音频功能</button>
+        <button onclick="setFunction('/agent/image')">图片功能</button>
+    </div>
+    <div class="chat-box" id="chat-box">
+        <!-- Chat messages will be appended here -->
+    </div>
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="请输入内容..."/>
+        <button id="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+    <div class="footer">创作者猫猫</div>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    let currentFunction = '/agent/text'; // Default to text function
+
+    function setFunction(func) {
+        currentFunction = func;
+    }
+
+    function appendMessage(content, className) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${className}`;
+        messageDiv.innerText = content;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const messageContent = userInput.value;
+        if (messageContent.trim() === '') return;
+
+        const message = [{"role": "user", "content": messageContent}];
+
+        appendMessage(messageContent, 'user');
+        userInput.value = '';
+        sendBtn.disabled = true;
+
+        // Send message to the backend
+        fetch(currentFunction, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(message)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json().then(data => {
+                const contentType = response.headers.get('type');
+                if (contentType === 'text') {
+                    appendMessage(data.content, 'bot');
+                } else if (contentType === 'text_img') {
+                    // Handle text_img type (not implemented in this example)
+                } else if (contentType === 'weather') {
+                    appendMessage(data.content, 'bot');
+                } else {
+                    appendMessage('Unknown response type.', 'bot');
+                }
+                sendBtn.disabled = false;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            appendMessage('错误：无法连接到服务器。', 'bot');
+            sendBtn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
